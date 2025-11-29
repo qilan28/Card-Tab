@@ -1711,11 +1711,12 @@ const HTML_CONTENT = `
             <div class="search-container">
                 <div class="search-bar">
                     <select id="search-engine-select">
-                        <option value="in_site" selected>站内搜索</option>
+                        <option value="in_site">站内搜索</option>
                         <option value="baidu">百度</option>
                         <option value="bing">必应</option>
                         <option value="google">谷歌</option>
                         <option value="duckduckgo">DuckDuckGo</option>
+                        
                     </select>
                     <input type="text" id="search-input" placeholder="">
                     <button id="search-button">🔍</button>
@@ -1860,23 +1861,15 @@ const HTML_CONTENT = `
     <div id="custom-tooltip"></div>
 
     <script>
-    const SEARCH_MODES = {
-        IN_SITE: 'in_site',
-        BAIDU: 'baidu',
-        BING: 'bing',
-        GOOGLE: 'google',
-        DUCKDUCKGO: 'duckduckgo'
-    };
-
     // 搜索引擎配置
     const searchEngines = {
-        [SEARCH_MODES.BAIDU]: "https://www.baidu.com/s?wd=",
-        [SEARCH_MODES.BING]: "https://www.bing.com/search?q=",
-        [SEARCH_MODES.GOOGLE]: "https://www.google.com/search?q=",
-        [SEARCH_MODES.DUCKDUCKGO]: "https://duckduckgo.com/?q="
+        baidu: "https://www.baidu.com/s?wd=",
+        bing: "https://www.bing.com/search?q=",
+        google: "https://www.google.com/search?q=",
+        duckduckgo: "https://duckduckgo.com/?q="
     };
 
-    let currentSearchMode = SEARCH_MODES.IN_SITE;
+    let currentEngine = "baidu";
     let isShowingSearchResults = false;
 
     // 日志记录函数
@@ -1887,29 +1880,33 @@ const HTML_CONTENT = `
     }
 
     // 设置当前搜索模式
-    function setActiveSearchMode(mode) {
-        const previousMode = currentSearchMode;
-        currentSearchMode = mode;
-        document.getElementById('search-engine-select').value = mode;
+    function setActiveEngine(engine) {
+        const previousMode = currentEngine;
+        currentEngine = engine;
+        document.getElementById('search-engine-select').value = engine;
         updateSearchPlaceholder();
 
         if (isInSiteSearchMode()) {
             const currentValue = document.getElementById('search-input').value;
-            filterBookmarksByKeyword(currentValue);
-        } else if (previousMode === SEARCH_MODES.IN_SITE && isShowingSearchResults) {
+            if (currentValue.trim() === '') {
+                hideSearchResults();
+            } else {
+                filterBookmarksByKeyword(currentValue);
+            }
+        } else if (previousMode === 'in_site' && isShowingSearchResults) {
             hideSearchResults();
         }
 
-        logAction('设置搜索模式', { mode });
+        logAction('设置搜索模式', { mode: engine });
     }
 
     // 搜索引擎选择框变更事件
     document.getElementById('search-engine-select').addEventListener('change', function() {
-        setActiveSearchMode(this.value);
+        setActiveEngine(this.value);
     });
 
     function isInSiteSearchMode() {
-        return currentSearchMode === SEARCH_MODES.IN_SITE;
+        return currentEngine === 'in_site';
     }
 
     function updateSearchPlaceholder() {
@@ -1933,13 +1930,13 @@ const HTML_CONTENT = `
             return;
         }
 
-        const engineUrl = searchEngines[currentSearchMode];
+        const engineUrl = searchEngines[currentEngine];
         if (!engineUrl) {
-            console.warn('未配置的搜索引擎:', currentSearchMode);
+            console.warn('未配置的搜索引擎:', currentEngine);
             return;
         }
 
-        logAction('执行搜索', { engine: currentSearchMode, query });
+        logAction('执行搜索', { engine: currentEngine, query });
         window.open(engineUrl + encodeURIComponent(query), '_blank');
     });
 
@@ -1956,11 +1953,16 @@ const HTML_CONTENT = `
             return;
         }
 
-        filterBookmarksByKeyword(e.target.value);
+        const value = e.target.value;
+        if (value.trim() === '') {
+            hideSearchResults();
+        } else {
+            filterBookmarksByKeyword(value);
+        }
     });
 
     // 初始化搜索引擎
-    setActiveSearchMode(currentSearchMode);
+    setActiveEngine(currentEngine);
 
     // 全局变量
     let publicLinks = [];
@@ -3500,19 +3502,14 @@ const HTML_CONTENT = `
     // 站内书签过滤
     function filterBookmarksByKeyword(keyword) {
         const keywordString = (keyword || '').trim();
-        const sectionsContainer = document.getElementById('sections-container');
-
-        if (!sectionsContainer) {
-            return;
-        }
 
         if (keywordString === '') {
-            isShowingSearchResults = false;
-            renderSections();
+            hideSearchResults();
             return;
         }
 
         const normalizedKeyword = keywordString.toLowerCase();
+        const sectionsContainer = document.getElementById('sections-container');
 
         const visibleLinks = links;
         const matchedLinks = visibleLinks.filter(link => {
