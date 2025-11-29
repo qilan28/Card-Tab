@@ -1895,11 +1895,7 @@ const HTML_CONTENT = `
 
         if (isInSiteSearchMode()) {
             const currentValue = document.getElementById('search-input').value;
-            if (currentValue.trim() === '') {
-                hideSearchResults();
-            } else {
-                filterBookmarksByKeyword(currentValue);
-            }
+            filterBookmarksByKeyword(currentValue);
         } else if (previousMode === SEARCH_MODES.IN_SITE && isShowingSearchResults) {
             hideSearchResults();
         }
@@ -1960,12 +1956,7 @@ const HTML_CONTENT = `
             return;
         }
 
-        const value = e.target.value;
-        if (value.trim() === '') {
-            hideSearchResults();
-        } else {
-            filterBookmarksByKeyword(value);
-        }
+        filterBookmarksByKeyword(e.target.value);
     });
 
     // 初始化搜索引擎
@@ -3509,14 +3500,19 @@ const HTML_CONTENT = `
     // 站内书签过滤
     function filterBookmarksByKeyword(keyword) {
         const keywordString = (keyword || '').trim();
+        const sectionsContainer = document.getElementById('sections-container');
+
+        if (!sectionsContainer) {
+            return;
+        }
 
         if (keywordString === '') {
-            hideSearchResults();
+            isShowingSearchResults = false;
+            renderSections();
             return;
         }
 
         const normalizedKeyword = keywordString.toLowerCase();
-        const sectionsContainer = document.getElementById('sections-container');
 
         const visibleLinks = links;
         const matchedLinks = visibleLinks.filter(link => {
