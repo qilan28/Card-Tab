@@ -8,13 +8,26 @@ const HTML_CONTENT = `
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2280%22>⭐</text></svg>">
     <style>
     /* 全局样式 */
-    body {
-        font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    html, body {
+        height: 100%;
+        width: 100%;
         margin: 0;
         padding: 0;
-        background-color: #f8f6f2; /* 米白色背景 */
+    }
+    
+    body {
+        font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        background-color: #121418; /* 深色背景作为底色 */
         color: #222; /* 深灰字体 */
         transition: all 0.3s ease;
+        /* --- 新增背景图设置 --- */
+        background-image: url('https://api.tomys.top/api/acgimg');
+        background-size: cover;       /* 让图片覆盖整个屏幕 */
+        background-position: center top;  /* 图片居中显示，优先显示顶部 */
+        background-attachment: fixed; /* 背景固定，不随内容滚动 */
+        background-repeat: no-repeat; /* 防止背景重复 */
+        min-height: 100vh;           /* 确保背景至少覆盖整个视口高度 */
+        /* --------------------- */
     }
 
     /* 暗色模式样式 */
@@ -29,7 +42,7 @@ const HTML_CONTENT = `
         top: 0;
         left: 0;
         right: 0;
-        background-color: #f8f6f2; /* 与整体背景一致 */
+        background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0) 100%); /* 渐变背景 */
         z-index: 1000;
         padding: 10px;
         transition: all 0.3s ease;
@@ -38,7 +51,7 @@ const HTML_CONTENT = `
     }
 
     body.dark-theme .fixed-elements {
-        background-color: #121418; /* 与暗色主题背景完全一致 */
+        background: linear-gradient(to bottom, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 100%); /* 暗色渐变背景 */
         box-shadow: none; /* 移除阴影 */
     }
 
@@ -47,25 +60,27 @@ const HTML_CONTENT = `
     .category-button {
         padding: 5px 10px;
         border-radius: 15px;
-        background-color: #f9fafb;
+        background-color: rgba(249, 250, 251, 0.85);
         color: #43b883;
         border: none;
         cursor: pointer;
         font-size: 12px;
         font-weight: 500;
         transition: all 0.2s ease;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
         flex: 0 0 auto;
         white-space: nowrap;
         margin: 0 2px;
         position: relative;
         overflow: hidden;
+        backdrop-filter: blur(2px);
     }
 
     body.dark-theme .category-button {
-        background-color: #2a2e38;
-        color: #5d7fb9;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        background-color: rgba(42, 46, 56, 0.85);
+        color: #7ba1e9;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(2px);
     }
 
     .category-button:hover {
@@ -93,49 +108,48 @@ const HTML_CONTENT = `
 
     /* 分类按钮悬停样式 */
 
+    /* 移除顶部标题，改为底部显示 */
     .fixed-elements h3 {
-        position: absolute;
-        top: 10px;
-        left: 20px;
-        margin: 0;
-        font-size: 22px;
-        font-weight: 600;
-        color: #222;
-        transition: all 0.3s ease;
+        display: none; /* 隐藏顶部标题 */
     }
 
     body.dark-theme .fixed-elements h3 {
-        color: #e3e3e3;
+        color: #fff;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
     }
 
     /* 一言模块样式 */
     #hitokoto {
         margin: 5px 0 15px;
         font-size: 14px;
-        color: #888;
+        color: #fff;
         font-style: italic;
         max-width: 600px;
         margin-left: auto;
         margin-right: auto;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
         transition: all 0.3s ease;
     }
 
     #hitokoto a {
-        color: #43b883;
+        color: #4dffb8;
         text-decoration: none;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
         transition: all 0.3s ease;
     }
 
     #hitokoto a:hover {
-        color: #35a674;
+        color: #6fffcb;
     }
 
     body.dark-theme #hitokoto {
-        color: #a0a0a0;
+        color: #fff;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
     }
 
     body.dark-theme #hitokoto a {
-        color: #5d7fb9;
+        color: #7ba1e9;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
     }
 
     /* 中心内容样式 */
@@ -150,15 +164,9 @@ const HTML_CONTENT = `
         padding: 0 10px; /* 添加左右内边距 */
     }
 
-    /* 右上角控制区域样式 */
+    /* 右上角控制区域样式 - 隐藏 */
     .top-right-controls {
-        position: fixed;
-        top: 10px;
-        right: 10px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        z-index: 1001;
+        display: none; /* 隐藏顶部控制区域 */
     }
 
     /* 设置按钮样式 */
@@ -427,13 +435,15 @@ const HTML_CONTENT = `
         align-items: center;
         margin-bottom: 20px;
         padding: 15px;
-        background-color: #f8f9fa;
+        background-color: rgba(248, 249, 250, 0.7);
+        backdrop-filter: blur(5px);
         border-radius: 8px;
         border-left: 4px solid #43b883;
     }
 
     body.dark-theme .search-results-header {
-        background-color: #2d3748;
+        background-color: rgba(45, 55, 72, 0.7);
+        backdrop-filter: blur(5px);
         border-left-color: #5d7fb9;
     }
 
@@ -565,8 +575,9 @@ const HTML_CONTENT = `
         border-radius: 8px;
         overflow: hidden;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        border: 1px solid #e0e0e0;
+        border: 1px solid rgba(224, 224, 224, 0.5);
         transition: all 0.3s ease;
+        backdrop-filter: blur(5px);
     }
 
     .search-bar:focus-within {
@@ -576,7 +587,7 @@ const HTML_CONTENT = `
 
     .search-bar select {
         border: none;
-        background-color: #f4f7fa;
+        background-color: rgba(244, 247, 250, 0.7);
         padding: 10px 15px;
         font-size: 14px;
         color: #43b883;
@@ -605,18 +616,19 @@ const HTML_CONTENT = `
 
     /* 暗色主题搜索栏样式 */
     body.dark-theme .search-bar {
-        border-color: #323642;
-        background-color: #1e2128;
+        border-color: rgba(50, 54, 66, 0.5);
+        background-color: rgba(30, 33, 40, 0.5);
+        backdrop-filter: blur(5px);
     }
 
     body.dark-theme .search-bar select {
-        background-color: #252830;
+        background-color: rgba(37, 40, 48, 0.7);
         color: #5d7fb9;
         background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="6" viewBox="0 0 12 6"><path fill="%235d7fb9" d="M0 0l6 6 6-6z"/></svg>');
     }
 
     body.dark-theme .search-bar input {
-        background-color: #252830;
+        background-color: rgba(37, 40, 48, 0.7);
         color: #e3e3e3;
     }
 
@@ -636,7 +648,7 @@ const HTML_CONTENT = `
         border: none;
         padding: 10px 15px;
         font-size: 14px;
-        background-color: #fff;
+        background-color: rgba(255, 255, 255, 0.7);
         outline: none;
     }
 
@@ -883,11 +895,19 @@ const HTML_CONTENT = `
     .section-title {
         font-size: 22px;
         font-weight: 600;
-        color: #222;
+        color: #ffffff;
         position: relative;
         padding-left: 15px;
         transition: color 0.3s ease;
         min-width: 120px;
+    }
+    
+    @media (max-width: 480px) {
+        .section-title {
+            font-size: 18px;
+            padding-left: 12px;
+            min-width: 90px;
+        }
     }
 
     body.dark-theme .section-title {
@@ -904,6 +924,13 @@ const HTML_CONTENT = `
         height: 22px;
         background-color: #43b883;
         border-radius: 2px;
+    }
+    
+    @media (max-width: 480px) {
+        .section-title:before {
+            width: 4px;
+            height: 18px;
+        }
     }
 
     .delete-category-btn {
@@ -942,7 +969,7 @@ const HTML_CONTENT = `
     }
 
     .card {
-        background-color: white;
+        background-color: rgba(255, 255, 255, 0.8);
         border-radius: 8px;
         padding: 12px;
         width: 150px;
@@ -956,12 +983,14 @@ const HTML_CONTENT = `
         animation-delay: calc(var(--card-index) * 0.05s);
         opacity: 0;
         margin: 2px;
+        backdrop-filter: blur(3px);
     }
 
     body.dark-theme .card {
-        background-color: #1e2128; /* 卡片背景 */
+        background-color: rgba(30, 33, 40, 0.8); /* 半透明卡片背景 */
         border-left-color: #5d7fb9;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        backdrop-filter: blur(3px);
     }
 
     @keyframes fadeIn {
@@ -1036,28 +1065,89 @@ const HTML_CONTENT = `
         left: 0;
         width: 100%;
         height: 40px;
-        background-color: rgba(255, 255, 255, 0.9);
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 100%);
         display: flex;
-        justify-content: center;
+        justify-content: center; /* 居中显示 */
         align-items: center;
         font-size: 14px;
         z-index: 1000;
-        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.03);
-        backdrop-filter: blur(5px);
         transition: all 0.3s ease;
+    }
+    
+    @media (max-width: 480px) {
+        #copyright {
+            height: 40px; /* 增加高度以容纳按钮 */
+            font-size: 12px;
+        }
+        
+        #copyright .copyright-container {
+            gap: 10px; /* 减小元素间距 */
+        }
+        
+        #copyright p {
+            display: none; /* 在移动设备上隐藏版权信息 */
+        }
     }
 
     #copyright p {
         margin: 0;
         font-weight: 500;
-        color: #666;
+        color: #fff;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+    }
+    
+    /* 底部标题样式 */
+    #copyright .site-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin-right: 15px;
+        color: #fff;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+    }
+    
+    /* 底部版权信息容器 */
+    #copyright .copyright-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 20px; /* 元素之间的间距 */
+        max-width: 800px; /* 限制最大宽度 */
+        width: 100%;
+    }
+    
+    /* 底部按钮组 */
+    #copyright .buttons-group {
+        display: flex;
+        align-items: center;
+        gap: 10px; /* 按钮之间的间距 */
+    }
+    
+    /* 底部按钮样式 */
+    #copyright .admin-btn,
+    #copyright .login-btn {
+        padding: 5px 10px;
+        font-size: 12px;
+    }
+    
+    @media (max-width: 480px) {
+        #copyright .site-title {
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        
+        #copyright .admin-btn,
+        #copyright .login-btn {
+            padding: 4px 8px;
+            font-size: 11px;
+        }
     }
 
     #copyright a {
-        color: #43b883;
+        color: #4dffb8;
         text-decoration: none;
         transition: all 0.3s ease;
         position: relative;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
     }
 
     #copyright a:after {
@@ -1067,7 +1157,7 @@ const HTML_CONTENT = `
         height: 1px;
         bottom: 0;
         left: 0;
-        background-color: #43b883;
+        background-color: #4dffb8;
         transform: scaleX(0);
         transition: transform 0.3s ease;
     }
@@ -1077,53 +1167,56 @@ const HTML_CONTENT = `
     }
 
     body.dark-theme #copyright {
-        background-color: rgba(37, 40, 48, 0.9);
+        background: linear-gradient(to top, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0) 100%);
         color: #e3e3e3;
     }
 
     body.dark-theme #copyright a {
-        color: #5d7fb9;
+        color: #7ba1e9;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
     }
 
     body.dark-theme #copyright a:after {
-        background-color: #5d7fb9;
+        background-color: #7ba1e9;
     }
 
     /* 响应式设计 */
     @media (max-width: 480px) {
         .fixed-elements {
             position: fixed; /* 恢复固定定位，确保分类按钮位置正确 */
-            padding: 8px 12px 5px 12px; /* 紧凑的内边距 */
+            padding: 5px 10px 3px 10px; /* 更紧凑的内边距 */
             height: auto;
-            min-height: 140px; /* 增加最小高度，确保有足够空间 */
+            min-height: 100px; /* 减小最小高度 */
             box-shadow: none; /* 移除阴影 */
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0) 100%); /* 渐变背景 */
         }
 
         body.dark-theme .fixed-elements {
             box-shadow: none; /* 移除阴影 */
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 100%); /* 暗色渐变背景 */
         }
 
         /* 移动端一言样式调整 - 紧凑显示 */
         #hitokoto {
-            margin: 3px 0 6px 0; /* 紧凑的上下边距 */
-            font-size: 12px; /* 减小字体 */
-            line-height: 1.3; /* 紧凑行高 */
-            padding: 0 8px; /* 左右内边距 */
+            margin: 2px 0 4px 0; /* 更紧凑的上下边距 */
+            font-size: 11px; /* 进一步减小字体 */
+            line-height: 1.2; /* 更紧凑行高 */
+            padding: 0 5px; /* 减小左右内边距 */
         }
 
         .category-buttons-container {
             width: 100%;
             max-width: none;
-            padding: 6px;
+            padding: 4px;
             overflow-x: auto; /* 允许水平滚动 */
             flex-wrap: nowrap; /* 不允许按钮换行 */
             justify-content: flex-start; /* 左对齐排列按钮 */
-            margin: 8px auto 5px; /* 紧凑的分类按钮边距 */
+            margin: 5px auto 3px; /* 更紧凑的分类按钮边距 */
             scrollbar-width: none; /* Firefox */
             -ms-overflow-style: none; /* IE and Edge */
             background-color: transparent; /* 移动端也透明 */
             border-radius: 8px;
-            gap: 4px; /* 减小按钮间距 */
+            gap: 3px; /* 更减小按钮间距 */
         }
 
         body.dark-theme .category-buttons-container {
@@ -1131,15 +1224,15 @@ const HTML_CONTENT = `
         }
 
         .category-button {
-            padding: 4px 8px;
-            font-size: 11px;
+            padding: 3px 6px;
+            font-size: 10px;
             margin: 0 1px;
         }
 
         .content {
-            margin-top: 150px; /* 增加顶部边距，适配更高的固定元素 */
-            margin-bottom: 100px; /* 为底部的分类按钮和版权信息留出空间 */
-            padding: 15px; /* 保持内边距 */
+            margin-top: 110px; /* 减小顶部边距 */
+            margin-bottom: 80px; /* 减小底部边距 */
+            padding: 10px; /* 减小内边距 */
             transition: opacity 0.3s ease;
         }
 
@@ -1158,14 +1251,14 @@ const HTML_CONTENT = `
 
         /* 移动端搜索容器样式 */
         .search-container {
-            margin-top: 15px; /* 增加上边距，与右上角按钮拉开距离 */
+            margin-top: 8px; /* 减小上边距 */
         }
 
         .search-bar {
             flex-wrap: nowrap;
-            max-width: 320px; /* 限制移动端搜索栏宽度 */
+            max-width: 300px; /* 减小搜索栏宽度 */
             width: 90%; /* 相对宽度 */
-            margin: 6px auto 8px auto; /* 居中显示 */
+            margin: 4px auto 6px auto; /* 减小上下边距 */
         }
 
         .search-bar select {
@@ -1199,24 +1292,24 @@ const HTML_CONTENT = `
 
         .card-container {
             display: grid;
-            grid-template-columns: repeat(2, minmax(140px, 1fr));
-            column-gap: 20px;
-            row-gap: 10px;
+            grid-template-columns: repeat(2, minmax(120px, 1fr)); /* 减小卡片宽度 */
+            column-gap: 10px; /* 减小列间距 */
+            row-gap: 8px; /* 减小行间距 */
             justify-content: center;
-            padding: 12px;
+            padding: 8px; /* 减小内边距 */
             margin: 0 auto;
         }
 
         .card {
             width: auto;
             max-width: 100%;
-            padding: 12px;
+            padding: 8px; /* 减小内边距 */
             margin: 0;
-            border-radius: 8px;
+            border-radius: 6px; /* 减小圆角 */
         }
 
         .card-title {
-            font-size: 13px;
+            font-size: 12px; /* 减小字体 */
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -1224,7 +1317,7 @@ const HTML_CONTENT = `
         }
 
         .card-url {
-            font-size: 11px;
+            font-size: 10px; /* 减小字体 */
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -1233,11 +1326,11 @@ const HTML_CONTENT = `
 
         .add-remove-controls {
             right: 5px;
-            bottom: 150px;
+            bottom: 100px; /* 减小底部距离 */
             top: auto;
             transform: none;
             flex-direction: column;
-            gap: 15px;
+            gap: 10px; /* 减小间距 */
         }
 
         .round-btn {
@@ -1245,20 +1338,20 @@ const HTML_CONTENT = `
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 36px;
-            height: 36px;
-            font-size: 20px;
+            width: 32px; /* 减小尺寸 */
+            height: 32px; /* 减小尺寸 */
+            font-size: 18px; /* 减小字体 */
         }
 
         .floating-button-group {
-            bottom: 20px;
-            right: 10px;
+            bottom: 15px;
+            right: 8px;
         }
 
         .floating-button-group button {
-            width: 36px;
-            height: 36px;
-            font-size: 18px;
+            width: 32px;
+            height: 32px;
+            font-size: 16px;
         }
 
         #dialog-box {
@@ -1268,8 +1361,14 @@ const HTML_CONTENT = `
         }
 
         .section-title {
-            font-size: 20px;
-            min-width: 100px;
+            font-size: 16px; /* 进一步减小字体 */
+            min-width: 80px;
+            padding-left: 10px; /* 减小左边距 */
+        }
+        
+        .section-title:before {
+            width: 3px;
+            height: 16px;
         }
     }
 
@@ -1724,12 +1823,7 @@ const HTML_CONTENT = `
             </div>
             <div id="category-buttons-container" class="category-buttons-container"></div>
         </div>
-        <!-- 右上角控制区域 -->
-        <div class="top-right-controls">
-            <button class="admin-btn" id="admin-btn" onclick="toggleAdminMode()" style="display: none;">设置</button>
-            <button class="login-btn" id="login-btn" onclick="handleLoginClick()">登录</button>
-            
-        </div>
+        <!-- 右上角控制区域已移动到底部 -->
     </div>
     <div class="content">
         <!-- 管理控制按钮 -->
@@ -2123,6 +2217,94 @@ const HTML_CONTENT = `
 
 
 
+    // 加载特定分类的卡片
+    function loadCategoryCards(category) {
+        // 如果已经是当前激活分类，则收缩该分类
+        if (activeCategory === category) {
+            // 收缩当前分类
+            const currentSection = document.querySelector('.section[data-category="' + category + '"]');
+            if (currentSection) {
+                currentSection.style.display = 'none';
+            }
+            
+            // 重置激活分类
+            activeCategory = null;
+            
+            // 更新分类按钮的激活状态
+            updateActiveCategoryButton(null);
+            
+            logAction('收缩分类', { category: category });
+            return;
+        }
+        
+        // 如果是管理员模式，显示所有分类
+        if (!isAdmin) {
+            // 隐藏所有分类区域
+            document.querySelectorAll('.section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // 显示当前选中的分类区域
+            const currentSection = document.querySelector('.section[data-category="' + category + '"]');
+            if (currentSection) {
+                currentSection.style.display = 'block';
+            }
+        } else {
+            // 管理员模式下显示所有分类
+            document.querySelectorAll('.section').forEach(section => {
+                section.style.display = 'block';
+            });
+        }
+        
+        const cardContainer = document.getElementById(category);
+        if (!cardContainer) return;
+        
+        // 检查是否已经加载过
+        if (cardContainer.getAttribute('data-loaded') === 'true') {
+            // 已加载，只需要滚动到该分类
+            scrollToCategory(category);
+            activeCategory = category;
+            updateActiveCategoryButton(category);
+            return;
+        }
+        
+        // 清空容器
+        cardContainer.innerHTML = '';
+        
+        // 加载该分类的卡片
+        links.forEach(link => {
+            if (link.category === category) {
+                createCard(link, cardContainer);
+            }
+        });
+        
+        // 标记为已加载
+        cardContainer.setAttribute('data-loaded', 'true');
+        
+        // 滚动到该分类
+        scrollToCategory(category);
+        
+        // 更新当前激活分类
+        activeCategory = category;
+        
+        // 更新分类按钮的激活状态
+        updateActiveCategoryButton(category);
+        
+        logAction('加载分类卡片', { category: category });
+    }
+    
+    // 更新分类按钮的激活状态
+    function updateActiveCategoryButton(activeCategory) {
+        document.querySelectorAll('.category-button').forEach(button => {
+            // 如果activeCategory为null或者不匹配，移除激活状态
+            if (activeCategory && button.textContent === activeCategory) {
+                button.classList.add('active');
+            } else {
+                button.classList.remove('active');
+            }
+        });
+    }
+    
     // 渲染分类快捷按钮
     function renderCategoryButtons() {
         // 如果正在显示搜索结果，不重新渲染分类按钮
@@ -2135,15 +2317,12 @@ const HTML_CONTENT = `
 
         // 只有当有分类时才显示按钮容器
         if (Object.keys(categories).length > 0) {
-            // 获取页面上实际显示的分类顺序（只从sections-container中获取，不包括搜索结果）
-            const displayedCategories = [];
-            document.querySelectorAll('#sections-container .section-title').forEach(titleElement => {
-                displayedCategories.push(titleElement.textContent);
-            });
+            // 直接使用categories对象中的所有分类
+            const allCategories = Object.keys(categories);
 
             // 创建按钮并添加到容器
             let visibleButtonsCount = 0;
-            displayedCategories.forEach(category => {
+            allCategories.forEach(category => {
                 // 检查该分类是否有可见的链接
                 const visibleLinks = links.filter(function(link) {
                     return link.category === category && (!link.isPrivate || isLoggedIn);
@@ -2160,16 +2339,11 @@ const HTML_CONTENT = `
                         if (isShowingSearchResults) {
                             hideSearchResults();
                         }
-
-                        // 清除所有按钮的active类
-                        document.querySelectorAll('.category-button').forEach(btn => {
-                            btn.classList.remove('active');
-                        });
-                        // 为当前点击的按钮添加active类
-                        button.classList.add('active');
-                        scrollToCategory(category);
+                        
+                        // 加载对应分类的卡片
+                        loadCategoryCards(category);
                     };
-
+                    
                     buttonsContainer.appendChild(button);
                     visibleButtonsCount++;
                 }
@@ -2343,8 +2517,25 @@ const HTML_CONTENT = `
 
         if (isAdmin) {
             addRemoveControls.style.display = 'flex';
+            
+            // 管理员模式下显示所有分类
+            document.querySelectorAll('.section').forEach(section => {
+                section.style.display = 'block';
+            });
         } else {
             addRemoveControls.style.display = 'none';
+            
+            // 非管理员模式下，如果有激活分类，只显示该分类
+            if (activeCategory && !isShowingSearchResults) {
+                document.querySelectorAll('.section').forEach(section => {
+                    section.style.display = 'none';
+                });
+                
+                const activeSection = document.querySelector('.section[data-category="' + activeCategory + '"]');
+                if (activeSection) {
+                    activeSection.style.display = 'block';
+                }
+            }
         }
 
         // 同时更新登录和设置按钮状态
@@ -2366,6 +2557,9 @@ const HTML_CONTENT = `
         }
     }
 
+    // 当前激活的分类
+    let activeCategory = null;
+    
     // 渲染分类和链接
     function renderSections() {
         const container = document.getElementById('sections-container');
@@ -2374,6 +2568,7 @@ const HTML_CONTENT = `
         Object.keys(categories).forEach(category => {
             const section = document.createElement('div');
             section.className = 'section';
+            section.setAttribute('data-category', category);
 
             const titleContainer = document.createElement('div');
             titleContainer.className = 'section-title-container';
@@ -2417,10 +2612,13 @@ const HTML_CONTENT = `
             const cardContainer = document.createElement('div');
             cardContainer.className = 'card-container';
             cardContainer.id = category;
+            // 初始设置为空，等点击分类时再加载
+            cardContainer.setAttribute('data-loaded', 'false');
 
             section.appendChild(titleContainer);
             section.appendChild(cardContainer);
 
+            // 计算该分类下的链接数量（包括私密链接）
             let privateCount = 0;
             let linkCount = 0;
 
@@ -2428,11 +2626,26 @@ const HTML_CONTENT = `
                 if (link.category === category) {
                     if (link.isPrivate) privateCount++;
                     linkCount++;
-                    createCard(link, cardContainer);
                 }
             });
 
+            // 添加链接数量指示器
+            const linkCountIndicator = document.createElement('span');
+            linkCountIndicator.className = 'link-count-indicator';
+            linkCountIndicator.textContent = '(' + linkCount + '个链接)';
+            linkCountIndicator.style.marginLeft = '10px';
+            linkCountIndicator.style.fontSize = '14px';
+            linkCountIndicator.style.color = '#888';
+            titleContainer.appendChild(linkCountIndicator);
+            
+            // 点击分类标题加载对应的卡片
+            titleContainer.style.cursor = 'pointer';
+            titleContainer.addEventListener('click', () => loadCategoryCards(category));
+
+            // 只有当分类中有公开链接或用户已登录时才显示该分类
             if (privateCount < linkCount || isLoggedIn) {
+                // 如果是管理员模式，显示所有分类，否则初始隐藏所有分类区域
+                section.style.display = isAdmin ? 'block' : 'none';
                 container.appendChild(section);
             }
         });
@@ -2440,7 +2653,7 @@ const HTML_CONTENT = `
         // 渲染分类快捷按钮
         renderCategoryButtons();
 
-        logAction('渲染分类和链接', { isAdmin: isAdmin, linkCount: links.length, categoryCount: Object.keys(categories).length });
+        logAction('渲染分类结构', { isAdmin: isAdmin, categoryCount: Object.keys(categories).length });
     }
 
     // 从URL中提取域名
@@ -3572,38 +3785,138 @@ const HTML_CONTENT = `
         if (categoryButtonsContainer) {
             categoryButtonsContainer.style.display = 'none';
         }
-
-        logAction('执行书签搜索', { query: keywordString, resultCount: matchedLinks.length });
     }
-
-    // 隐藏搜索结果 - 简化版
+    
+    // 隐藏搜索结果，返回主界面
     function hideSearchResults() {
-        // 重置标记
-        isShowingSearchResults = false;
-
-        // 重新渲染正常的分类和书签
-        renderSections();
-
-        // 显示分类按钮
-        const categoryButtonsContainer = document.getElementById('category-buttons-container');
-        if (categoryButtonsContainer) {
-            categoryButtonsContainer.style.display = 'flex';
+        const searchResultsSection = document.getElementById('search-results-section');
+        if (searchResultsSection) {
+            searchResultsSection.style.display = 'none';
         }
 
-        // 重新渲染分类按钮，确保分类按钮的正确显示
+        const sectionsContainer = document.getElementById('sections-container');
+        if (sectionsContainer) {
+            sectionsContainer.style.display = 'block';
+        }
+        
+        isShowingSearchResults = false;
+
+        // 重新渲染分类按钮
         renderCategoryButtons();
+
+        // 如果是管理员模式，显示所有分类
+        if (isAdmin) {
+            document.querySelectorAll('.section').forEach(section => {
+                section.style.display = 'block';
+            });
+            // 如果有激活分类，滚动到该分类
+            if (activeCategory) {
+                scrollToCategory(activeCategory);
+            }
+        } else {
+            // 非管理员模式，隐藏所有分类区域
+            document.querySelectorAll('.section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // 如果有激活分类，加载该分类的卡片
+            if (activeCategory) {
+                // 显示当前激活分类
+                const activeSection = document.querySelector('.section[data-category="' + activeCategory + '"]');
+                if (activeSection) {
+                    activeSection.style.display = 'block';
+                }
+                scrollToCategory(activeCategory);
+            } else {
+                // 如果没有激活分类，自动加载第一个分类
+                // 先隐藏所有分类
+                document.querySelectorAll('.section').forEach(section => {
+                    section.style.display = 'none';
+                });
+                
+                // 加载第一个分类
+                const categoryList = Object.keys(categories || {});
+                if (categoryList.length > 0) {
+                    // 使用loadCategoryCards函数加载第一个分类的卡片
+                    // 这个函数会处理显示分类、加载卡片和设置激活状态
+                    loadCategoryCards(categoryList[0]);
+                } else {
+                    // 如果没有分类，重置激活分类
+                    activeCategory = null;
+                    updateActiveCategoryButton(null);
+                }
+            }
+        }
     }
 
+// 验证密码
+async function verifyPassword(inputPassword) {
+    const response = await fetch('/api/verifyPassword', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: inputPassword }),
+    });
+    const result = await response.json();
+    return result;
+}
 
-
+    // 添加滚动事件监听器
+    window.addEventListener('scroll', handleBackToTopVisibility);
+    
     // 初始化加载
     document.addEventListener('DOMContentLoaded', async () => {
         try {
             await validateToken();
             updateLoginButton();
             await loadLinks();
-            // 初始加载完成后，检测当前可见分类
-            setTimeout(setActiveCategoryButtonByVisibility, 500);
+            
+            // 初始加载完成后，如果是管理员模式显示所有分类，否则保持分类收缩
+            setTimeout(() => {
+                if (isAdmin) {
+                    // 管理员模式显示所有分类
+                    document.querySelectorAll('.section').forEach(section => {
+                        section.style.display = 'block';
+                    });
+                } else {
+                    // 非管理员模式下首次加载自动显示第一个分类
+                    // 先隐藏所有分类
+                    document.querySelectorAll('.section').forEach(section => {
+                        section.style.display = 'none';
+                    });
+                    
+                    // 加载第一个分类
+                    const categoryList = Object.keys(categories || {});
+                    if (categoryList.length > 0) {
+                        // 设置激活分类
+                        const firstCategory = categoryList[0];
+                        
+                        // 使用loadCategoryCards函数加载第一个分类的卡片
+                        // 这个函数会处理显示分类、加载卡片和设置激活状态
+                        loadCategoryCards(firstCategory);
+                    } else {
+                        // 如果没有分类，重置激活分类
+                        activeCategory = null;
+                    }
+                }
+                
+                // 无论如何，都要渲染分类按钮
+                renderCategoryButtons();
+                
+                // 确保分类按钮容器是显示的
+                const categoryButtonsContainer = document.getElementById('category-buttons-container');
+                if (categoryButtonsContainer) {
+                    categoryButtonsContainer.style.display = 'flex';
+                }
+                
+                // 更新分类按钮状态
+                updateActiveCategoryButton(activeCategory);
+                
+                // 如果有激活分类，滚动到该分类
+                if (activeCategory) {
+                    scrollToCategory(activeCategory);
+                }
+            }, 500);
+            
             // 初始化返回顶部按钮状态
             setTimeout(handleBackToTopVisibility, 100);
         } catch (error) {
@@ -3611,9 +3924,6 @@ const HTML_CONTENT = `
             console.error('Initialization failed');
         }
     });
-
-    // 添加滚动事件监听器
-    window.addEventListener('scroll', handleBackToTopVisibility);
 
 
     // 前端检查是否有 token
@@ -3872,6 +4182,18 @@ const HTML_CONTENT = `
     }
 
     </script>
+    
+    <!-- 底部版权信息 -->
+    <div id="copyright">
+        <div class="copyright-container">
+            <span class="site-title">柒蓝导航</span>
+            <p>&copy; 2025 <a href="https://github.com/qilan28/Card-Tab" target="_blank">Card-Tab</a></p>
+            <div class="buttons-group">
+                <button class="admin-btn" id="admin-btn" onclick="toggleAdminMode()" style="display: none;">设置</button>
+                <button class="login-btn" id="login-btn" onclick="handleLoginClick()">登录</button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
