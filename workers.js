@@ -243,98 +243,6 @@ const HTML_CONTENT = `
         fill: #5d7fb9;
     }
 
-    /* 书签搜索图标按钮样式 */
-    .bookmark-search-toggle {
-        background-color: #43b883;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        padding: 0;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 36px;
-        height: 36px;
-        position: relative;
-    }
-
-    .bookmark-search-toggle:hover {
-        background-color: #35a674;
-        transform: translateY(-2px);
-    }
-
-    .bookmark-search-toggle svg {
-        width: 20px;
-        height: 20px;
-        stroke: white;
-    }
-
-    body.dark-theme .bookmark-search-toggle {
-        background-color: #5d7fb9;
-    }
-
-    body.dark-theme .bookmark-search-toggle:hover {
-        background-color: #4a6fa5;
-    }
-
-    /* 下拉书签搜索框样式 */
-    .bookmark-search-dropdown {
-        position: absolute;
-        top: 100%;
-        right: 0;
-        width: 140px;
-        background-color: white;
-        border: 1px solid #e0e0e0;
-        border-radius: 4px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        padding: 8px;
-        margin-top: 4px;
-        display: none;
-        z-index: 1002;
-    }
-
-    .bookmark-search-dropdown.show {
-        display: block;
-    }
-
-    .bookmark-search-dropdown input {
-        width: 100%;
-        border: 1px solid #e0e0e0;
-        border-radius: 4px;
-        padding: 8px 12px;
-        font-size: 13px;
-        transition: all 0.3s ease;
-        box-sizing: border-box;
-    }
-
-    .bookmark-search-dropdown input:focus {
-        border-color: #43b883;
-        box-shadow: 0 0 0 2px rgba(67, 184, 131, 0.2);
-        outline: none;
-    }
-
-    .bookmark-search-dropdown input::placeholder {
-        color: #999;
-    }
-
-    body.dark-theme .bookmark-search-dropdown {
-        background-color: #323642;
-        border-color: #444;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    }
-
-    body.dark-theme .bookmark-search-dropdown input {
-        background-color: #252830;
-        color: #e3e3e3;
-        border-color: #444;
-    }
-
-    body.dark-theme .bookmark-search-dropdown input::placeholder {
-        color: #888;
-    }
-
     /* 登录弹窗样式 */
     .login-modal {
         display: none;
@@ -1807,6 +1715,7 @@ const HTML_CONTENT = `
                         <option value="bing">必应</option>
                         <option value="google">谷歌</option>
                         <option value="duckduckgo">DuckDuckGo</option>
+                        <option value="in_site">站内搜索</option>
                     </select>
                     <input type="text" id="search-input" placeholder="">
                     <button id="search-button">🔍</button>
@@ -1823,17 +1732,6 @@ const HTML_CONTENT = `
                     <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
                 </svg>
             </button>
-            <div class="bookmark-search-toggle" onclick="toggleBookmarkSearch()">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <path d="m21 21-4.35-4.35"></path>
-                    <line x1="11" y1="8" x2="11" y2="14"></line>
-                    <line x1="8" y1="11" x2="14" y2="11"></line>
-                </svg>
-                <div class="bookmark-search-dropdown" id="bookmark-search-dropdown">
-                    <input type="text" id="bookmark-search-input" placeholder="搜索书签...">
-                </div>
-            </div>
         </div>
     </div>
     <div class="content">
@@ -1971,6 +1869,7 @@ const HTML_CONTENT = `
     };
 
     let currentEngine = "baidu";
+    let isShowingSearchResults = false;
 
     // 日志记录函数
     function logAction(action, details) {
@@ -1979,11 +1878,25 @@ const HTML_CONTENT = `
         console.log(logEntry);
     }
 
-    // 设置当前搜索引擎
+    // 设置当前搜索模式
     function setActiveEngine(engine) {
+        const previousMode = currentEngine;
         currentEngine = engine;
         document.getElementById('search-engine-select').value = engine;
-        logAction('设置搜索引擎', { engine });
+        updateSearchPlaceholder();
+
+        if (isInSiteSearchMode()) {
+            const currentValue = document.getElementById('search-input').value;
+            if (currentValue.trim() === '') {
+                hideSearchResults();
+            } else {
+                filterBookmarksByKeyword(currentValue);
+            }
+        } else if (previousMode === 'in_site' && isShowingSearchResults) {
+            hideSearchResults();
+        }
+
+        logAction('设置搜索模式', { mode: engine });
     }
 
     // 搜索引擎选择框变更事件
@@ -1991,19 +1904,59 @@ const HTML_CONTENT = `
         setActiveEngine(this.value);
     });
 
+    function isInSiteSearchMode() {
+        return currentEngine === 'in_site';
+    }
+
+    function updateSearchPlaceholder() {
+        const searchInput = document.getElementById('search-input');
+        if (!searchInput) {
+            return;
+        }
+        searchInput.placeholder = isInSiteSearchMode() ? '搜索书签...' : '';
+    }
+
     // 搜索按钮点击事件
     document.getElementById('search-button').addEventListener('click', () => {
         const query = document.getElementById('search-input').value;
-        if (query) {
-            logAction('执行搜索', { engine: currentEngine, query });
-            window.open(searchEngines[currentEngine] + encodeURIComponent(query), '_blank');
+
+        if (isInSiteSearchMode()) {
+            filterBookmarksByKeyword(query);
+            return;
         }
+
+        if (!query) {
+            return;
+        }
+
+        const engineUrl = searchEngines[currentEngine];
+        if (!engineUrl) {
+            console.warn('未配置的搜索引擎:', currentEngine);
+            return;
+        }
+
+        logAction('执行搜索', { engine: currentEngine, query });
+        window.open(engineUrl + encodeURIComponent(query), '_blank');
     });
 
     // 搜索输入框回车事件
     document.getElementById('search-input').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             document.getElementById('search-button').click();
+        }
+    });
+
+    // 搜索输入框实时响应站内搜索
+    document.getElementById('search-input').addEventListener('input', (e) => {
+        if (!isInSiteSearchMode()) {
+            return;
+        }
+
+        const value = e.target.value;
+        if (value.trim() === '') {
+            hideSearchResults();
+        } else {
+            filterBookmarksByKeyword(value);
         }
     });
 
@@ -3149,29 +3102,6 @@ const HTML_CONTENT = `
         logAction('访问GitHub仓库');
     }
 
-    // 切换书签搜索下拉框
-    function toggleBookmarkSearch() {
-        const dropdown = document.getElementById('bookmark-search-dropdown');
-        const isVisible = dropdown.classList.contains('show');
-
-        if (isVisible) {
-            dropdown.classList.remove('show');
-        } else {
-            dropdown.classList.add('show');
-            document.getElementById('bookmark-search-input').focus();
-        }
-    }
-
-    // 点击页面其他地方关闭书签搜索下拉框
-    document.addEventListener('click', function(event) {
-        const searchToggle = document.querySelector('.bookmark-search-toggle');
-        const dropdown = document.getElementById('bookmark-search-dropdown');
-
-        if (!searchToggle.contains(event.target)) {
-            dropdown.classList.remove('show');
-        }
-    });
-
     // 登录密码输入框回车事件
     document.getElementById('login-password').addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
@@ -3568,24 +3498,29 @@ const HTML_CONTENT = `
         return result;
     }
 
-    // 全局变量，标记是否正在显示搜索结果
-    let isShowingSearchResults = false;
+    // 站内书签过滤
+    function filterBookmarksByKeyword(keyword) {
+        const keywordString = (keyword || '').trim();
 
-    // 书签搜索功能 - 简化版
-    function searchBookmarks(query) {
-        if (!query || query.trim() === '') {
+        if (keywordString === '') {
             hideSearchResults();
             return;
         }
 
-        query = query.toLowerCase().trim();
+        const normalizedKeyword = keywordString.toLowerCase();
         const sectionsContainer = document.getElementById('sections-container');
 
-        // 只搜索书签名称，简化搜索逻辑
         const visibleLinks = links;
-        const matchedLinks = visibleLinks.filter(link =>
-            link.name.toLowerCase().includes(query)
-        );
+        const matchedLinks = visibleLinks.filter(link => {
+            const name = (link.name || '').toLowerCase();
+            const tips = (link.tips || '').toLowerCase();
+            const url = (link.url || '').toLowerCase();
+            return (
+                name.includes(normalizedKeyword) ||
+                tips.includes(normalizedKeyword) ||
+                url.includes(normalizedKeyword)
+            );
+        });
 
         // 清空主内容区域
         sectionsContainer.innerHTML = '';
@@ -3641,16 +3576,13 @@ const HTML_CONTENT = `
             categoryButtonsContainer.style.display = 'none';
         }
 
-        logAction('执行书签搜索', { query, resultCount: matchedLinks.length });
+        logAction('执行书签搜索', { query: keywordString, resultCount: matchedLinks.length });
     }
 
     // 隐藏搜索结果 - 简化版
     function hideSearchResults() {
         // 重置标记
         isShowingSearchResults = false;
-
-        // 清空搜索框
-        document.getElementById('bookmark-search-input').value = '';
 
         // 重新渲染正常的分类和书签
         renderSections();
@@ -3664,26 +3596,6 @@ const HTML_CONTENT = `
         // 重新渲染分类按钮，确保分类按钮的正确显示
         renderCategoryButtons();
     }
-
-    // 书签搜索输入框回车事件
-    document.getElementById('bookmark-search-input').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            const query = document.getElementById('bookmark-search-input').value;
-            searchBookmarks(query);
-            // 搜索后关闭下拉框
-            document.getElementById('bookmark-search-dropdown').classList.remove('show');
-        }
-    });
-
-    // 书签搜索输入框实时搜索
-    document.getElementById('bookmark-search-input').addEventListener('input', (e) => {
-        const query = e.target.value;
-        if (query.trim() === '') {
-            hideSearchResults();
-        } else {
-            searchBookmarks(query);
-        }
-    });
 
 
 
