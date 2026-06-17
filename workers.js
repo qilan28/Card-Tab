@@ -845,6 +845,17 @@ const HTML_CONTENT = `
         card.addEventListener('dragover', dragOver);
         card.addEventListener('dragend', dragEnd);
         card.addEventListener('drop', drop);
+        card.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            navigator.clipboard.writeText(link.url).then(() => {
+                const tt = document.getElementById('custom-tooltip');
+                tt.textContent = '✓ 已复制';
+                tt.style.display = 'block';
+                tt.style.left = e.pageX + 12 + 'px';
+                tt.style.top = e.pageY + 12 + 'px';
+                setTimeout(() => { tt.style.display = 'none'; }, 1200);
+            }).catch(() => {});
+        });
 
         container.appendChild(card);
     }
@@ -1127,8 +1138,8 @@ const HTML_CONTENT = `
         const link = getDialogData();
         if (!link) return;
         
-        if ([...publicLinks, ...privateLinks].some(l => l.url.toLowerCase() === link.url.toLowerCase())) {
-            return customAlert('URL 已存在');
+        if ([...publicLinks, ...privateLinks].some(l => l.url.toLowerCase() === link.url.toLowerCase() && l.category === link.category && l.subCategory === link.subCategory)) {
+            return customAlert('该分类下已存在此书签');
         }
 
         link.isPrivate ? privateLinks.push(link) : publicLinks.push(link);
@@ -1149,8 +1160,8 @@ const HTML_CONTENT = `
         const newLink = getDialogData();
         if (!newLink) return;
 
-        if ([...publicLinks, ...privateLinks].some(l => l.url.toLowerCase() === newLink.url.toLowerCase() && l.url !== oldLink.url)) {
-            return customAlert('URL 已存在');
+        if ([...publicLinks, ...privateLinks].some(l => l.url.toLowerCase() === newLink.url.toLowerCase() && l.url !== oldLink.url && l.category === newLink.category && l.subCategory === newLink.subCategory)) {
+            return customAlert('该分类下已存在此书签');
         }
 
         const list = oldLink.isPrivate ? privateLinks : publicLinks;
