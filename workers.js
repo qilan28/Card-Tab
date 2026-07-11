@@ -638,41 +638,37 @@ const HTML_CONTENT = `
             pSection.id = 'parent-' + pCat;
             pSection.dataset.parent = pCat;
 
-            const pTitleContainer = document.createElement('div');
-            pTitleContainer.className = 'parent-title-container';
-            
-            const pTitle = document.createElement('div');
-            pTitle.className = 'parent-title';
-            pTitle.textContent = pCat;
-            pTitleContainer.appendChild(pTitle);
-
             if (isAdmin) {
+                const catActions = document.createElement('div');
+                catActions.className = 'category-actions';
+                catActions.style.cssText = 'display:flex;gap:6px;padding:4px 0;align-items:center;';
+                
                 const editPBtn = document.createElement('button');
                 editPBtn.textContent = '重命名'; editPBtn.className = 'edit-category-btn';
                 editPBtn.style.display = isEditCategoryMode ? 'inline-block' : 'none';
                 editPBtn.onclick = (e) => { e.stopPropagation(); editParentCategoryName(pCat); };
-                pTitleContainer.appendChild(editPBtn);
+                catActions.appendChild(editPBtn);
 
                 const delPBtn = document.createElement('button');
                 delPBtn.textContent = '删除'; delPBtn.className = 'delete-category-btn';
                 delPBtn.style.display = isEditCategoryMode ? 'inline-block' : 'none';
                 delPBtn.onclick = (e) => { e.stopPropagation(); deleteParentCategory(pCat); };
-                pTitleContainer.appendChild(delPBtn);
+                catActions.appendChild(delPBtn);
 
                 const upPBtn = document.createElement('button');
                 upPBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 6l-6 6h4v6h4v-6h4z"/></svg>';
                 upPBtn.className = 'move-category-btn'; upPBtn.style.display = isEditCategoryMode ? 'inline-flex' : 'none';
                 upPBtn.onclick = (e) => { e.stopPropagation(); moveParentCategory(pCat, -1); };
-                pTitleContainer.appendChild(upPBtn);
+                catActions.appendChild(upPBtn);
 
                 const downPBtn = document.createElement('button');
                 downPBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 18l6-6h-4v-6h-4v6h-4z"/></svg>';
                 downPBtn.className = 'move-category-btn'; downPBtn.style.display = isEditCategoryMode ? 'inline-flex' : 'none';
                 downPBtn.onclick = (e) => { e.stopPropagation(); moveParentCategory(pCat, 1); };
-                pTitleContainer.appendChild(downPBtn);
+                catActions.appendChild(downPBtn);
+
+                pSection.appendChild(catActions);
             }
-            
-            pSection.appendChild(pTitleContainer);
 
             let pHasVisibleLinks = false;
 
@@ -777,18 +773,13 @@ const HTML_CONTENT = `
         icon.className = 'card-icon';
         const isUsingFavicon = (!link.icon || !link.icon.trim() || !isValidUrl(link.icon));
         const domain = extractDomain(link.url);
-        icon.src = isUsingFavicon ? 'https://www.faviconextractor.com/favicon/' + domain : link.icon;
+        icon.src = isUsingFavicon ? 'https://favicon.im/' + domain : link.icon;
         
+        icon.onerror = function() {
+            if (isUsingFavicon) card.classList.replace('status-warning', 'status-error');
+        };
         icon.onload = function() {
-            if (isUsingFavicon) {
-                setTimeout(() => {
-                    if (this.naturalWidth === 100 && this.naturalHeight === 100) {
-                        card.classList.replace('status-warning', 'status-error');
-                    } else {
-                        card.classList.replace('status-warning', 'status-ok');
-                    }
-                }, 50);
-            }
+            if (isUsingFavicon) card.classList.replace('status-warning', 'status-ok');
         };
         icon.onerror = function() {
             card.classList.replace('status-warning', 'status-error');
@@ -816,7 +807,8 @@ const HTML_CONTENT = `
         }
 
         const correctedUrl = link.url.startsWith('http') ? link.url : 'http://' + link.url;
-        if (!isAdmin) {
+        // 点击卡片始终跳转（批量删除模式除外）
+        if (!removeMode) {
             card.addEventListener('click', () => window.open(correctedUrl, '_blank'));
         }
 
@@ -837,6 +829,11 @@ const HTML_CONTENT = `
         actions.appendChild(delBtn);
         card.appendChild(actions);
 
+        // 管理模式：hover 显示编辑/删除按钮；批量删除模式：始终显示
+        if (isAdmin && !removeMode) {
+            card.addEventListener('mouseenter', () => { editBtn.style.display = 'flex'; delBtn.style.display = 'flex'; });
+            card.addEventListener('mouseleave', () => { editBtn.style.display = 'none'; delBtn.style.display = 'none'; });
+        }
         if (isAdmin && removeMode) { editBtn.style.display = 'flex'; delBtn.style.display = 'flex'; card.style.cursor='default';}
         
         card.addEventListener('mousemove', (e) => handleTooltipMouseMove(e, link.tips, isAdmin));
@@ -1475,30 +1472,39 @@ export default {
                 const validation = await validateServerToken(authToken, env);
                 if (!validation.isValid) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
 
-                // 一次性恢复：从备份中合并 testUser 缺失的私密链接
-                if (userId === 'testUser' && !parsedData._mergedFromBackup) {
+                // 持久防护：从独立 key 恢复被 cron 覆盖的 isPrivate 标志
+                if (userId === 'testUser') {
                     try {
-                        const backupData = await env.CARD_ORDER.get('backup_1777823865246');
-                        if (backupData) {
-                            const backup = JSON.parse(backupData);
-                            const backupPrivateLinks = (backup.links || []).filter(l => l.isPrivate);
-                            let merged = false;
-                            backupPrivateLinks.forEach(bl => {
-                                if (!parsedData.links.some(l => l.url === bl.url)) {
-                                    if (!bl.subCategory) bl.subCategory = '默认分类';
-                                    if (!bl.status) bl.status = 'ok';
-                                    if (!bl.lastChecked) bl.lastChecked = new Date().toISOString();
-                                    parsedData.links.push(bl);
-                                    if (!parsedData.categories[bl.category]) parsedData.categories[bl.category] = ['默认分类'];
-                                    merged = true;
+                        let privMapRaw = await env.CARD_ORDER.get('private_urls_testUser');
+                        // 首次部署时从备份初始化私密链接列表
+                        if (!privMapRaw) {
+                            const privMap = {};
+                            const bl = await env.CARD_ORDER.list({ prefix: 'backup_' });
+                            for (const k of (bl.keys || [])) {
+                                try {
+                                    const bd = await env.CARD_ORDER.get(k.name);
+                                    if (bd) (JSON.parse(bd).links || []).filter(l => l.isPrivate).forEach(l => { privMap[l.url] = true; });
+                                } catch (e) { /* skip */ }
+                            }
+                            if (Object.keys(privMap).length > 0) {
+                                await env.CARD_ORDER.put('private_urls_testUser', JSON.stringify(privMap));
+                                privMapRaw = JSON.stringify(privMap);
+                            }
+                        }
+                        if (privMapRaw) {
+                            const privMap = JSON.parse(privMapRaw);
+                            let repaired = false;
+                            for (const link of parsedData.links) {
+                                if (!link.isPrivate && privMap[link.url]) {
+                                    link.isPrivate = true;
+                                    repaired = true;
                                 }
-                            });
-                            if (merged) {
-                                parsedData._mergedFromBackup = true;
+                            }
+                            if (repaired) {
                                 await env.CARD_ORDER.put(userId, JSON.stringify(parsedData));
                             }
                         }
-                    } catch (e) { /* 恢复失败不影响正常使用 */ }
+                    } catch (e) { /* 修复失败不影响正常使用 */ }
                 }
 
                 return new Response(JSON.stringify(parsedData), { headers: { 'Content-Type': 'application/json' } });
@@ -1523,6 +1529,17 @@ export default {
             const { userId, links, categories } = await request.json();
             for (const link of links) { if (!link.status) { link.status = 'ok'; link.lastChecked = new Date().toISOString(); } }
             await env.CARD_ORDER.put(userId, JSON.stringify({ links, categories, lastStatusCheck: Date.now() }));
+
+            // 持久化私密链接 URL 列表（累积合并，防止被覆盖清空）
+            const privateKey = 'private_urls_' + userId;
+            let privMap = {};
+            try {
+                const oldPriv = await env.CARD_ORDER.get(privateKey);
+                if (oldPriv) privMap = JSON.parse(oldPriv);
+            } catch (e) { /* ignore */ }
+            links.filter(l => l.isPrivate).forEach(l => { privMap[l.url] = true; });
+            await env.CARD_ORDER.put(privateKey, JSON.stringify(privMap));
+
             return new Response(JSON.stringify({ success: true }), { headers: { 'Content-Type': 'application/json' } });
         } catch (error) {
             return new Response(JSON.stringify({ success: false }), { status: 500 });
@@ -1574,5 +1591,31 @@ export default {
       }
 
       return new Response('Not Found', { status: 404 });
+    },
+
+    // 定时安全网：每 10 分钟修复一次可能被 cron worker 覆盖的 isPrivate 标志
+    async scheduled(event, env) {
+        const userId = 'testUser';
+        try {
+            const privMapRaw = await env.CARD_ORDER.get('private_urls_' + userId);
+            if (!privMapRaw) return;
+            const privMap = JSON.parse(privMapRaw);
+
+            const data = await env.CARD_ORDER.get(userId);
+            if (!data) return;
+            const parsedData = JSON.parse(data);
+            if (!parsedData.links) return;
+
+            let repaired = false;
+            for (const link of parsedData.links) {
+                if (!link.isPrivate && privMap[link.url]) {
+                    link.isPrivate = true;
+                    repaired = true;
+                }
+            }
+            if (repaired) {
+                await env.CARD_ORDER.put(userId, JSON.stringify(parsedData));
+            }
+        } catch (e) { /* 静默失败 */ }
     }
 };
