@@ -341,7 +341,10 @@ const HTML_CONTENT = `
                 <label for="name-input">名称</label>
                 <input type="text" id="name-input" placeholder="必填">
                 <label for="url-input">地址</label>
-                <input type="text" id="url-input" placeholder="必填 (如 https://...)">
+                <div style="display:flex;gap:8px;">
+                    <input type="text" id="url-input" placeholder="必填 (如 https://...)" style="flex:1;">
+                    <button type="button" id="fetch-meta-btn" style="white-space:nowrap;padding:10px 14px;background:#43b883;color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:13px;margin-bottom:15px;">获取信息</button>
+                </div>
                 <label for="tips-input">描述</label>
                 <input type="text" id="tips-input" placeholder="可选悬停提示">
                 <label for="icon-input">图标</label>
@@ -1130,6 +1133,27 @@ const HTML_CONTENT = `
         cancelBtn.onclick = () => document.getElementById('dialog-overlay').style.display = 'none';
     }
 
+    async function fetchSiteMeta() {
+        const url = document.getElementById('url-input').value.trim();
+        if (!url || !isValidUrl(url.startsWith('http') ? url : 'https://' + url)) {
+            customAlert('请先输入有效的网址');
+            return;
+        }
+        const btn = document.getElementById('fetch-meta-btn');
+        btn.textContent = '获取中...'; btn.disabled = true;
+        try {
+            const resp = await fetch('/api/fetchMeta?url=' + encodeURIComponent(url));
+            const data = await resp.json();
+            if (data.title && !document.getElementById('name-input').value) {
+                document.getElementById('name-input').value = data.title;
+            }
+            if (data.description && !document.getElementById('tips-input').value) {
+                document.getElementById('tips-input').value = data.description;
+            }
+        } catch (e) { /* ignore */ }
+        btn.textContent = '获取信息'; btn.disabled = false;
+    }
+
     async function addLink() {
         if (!await validateToken()) return;
         const link = getDialogData();
@@ -1299,12 +1323,10 @@ const HTML_CONTENT = `
             document.querySelector('.add-remove-controls').style.display = 'flex';
             renderSections();
             hideLoading();
-            customAlert('已进入管理模式');
         } else if (isAdmin) {
             isAdmin = false; removeMode = false; isEditCategoryMode = false;
             document.querySelector('.add-remove-controls').style.display = 'none';
             renderSections();
-            customAlert('已退出管理模式');
         }
         updateLoginButton();
     }
@@ -1374,6 +1396,7 @@ const HTML_CONTENT = `
         } catch(e) {}
     }
     function hideLoginModal() { document.getElementById('login-modal').style.display='none'; }
+    document.getElementById('fetch-meta-btn').onclick = fetchSiteMeta;
     document.getElementById('login-btn').onclick = async () => {
         if(isLoggedIn) { if(await customConfirm('确定退出登录？')) { isLoggedIn=false; isAdmin=false; localStorage.removeItem('authToken'); links=publicLinks; renderSections(); updateLoginButton(); document.querySelector('.add-remove-controls').style.display='none'; } }
         else { document.getElementById('login-modal').style.display='flex'; document.getElementById('login-password').value=''; setTimeout(()=>document.getElementById('login-password').focus(),50); }
@@ -1433,6 +1456,30 @@ export default {
 
       if (url.pathname === '/') {
         return new Response(HTML_CONTENT, { headers: { 'Content-Type': 'text/html;charset=UTF-8' } });
+      }
+
+      if (url.pathname === '/api/fetchMeta') {
+        const targetUrl = url.searchParams.get('url');
+        if (!targetUrl) return new Response(JSON.stringify({ error: 'Missing url' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        try {
+            const ctrl = new AbortController();
+            const t = setTimeout(() => ctrl.abort(), 5000);
+            const resp = await fetch(targetUrl, {
+                signal: ctrl.signal,
+                redirect: 'follow',
+                headers: { 'User-Agent': 'Mozilla/5.0 (compatible; NavMetaBot/1.0)' }
+            });
+            clearTimeout(t);
+            const html = await resp.text();
+            const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+            const descMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i) || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i);
+            return new Response(JSON.stringify({
+                title: titleMatch ? titleMatch[1].trim() : '',
+                description: descMatch ? descMatch[1].trim() : ''
+            }), { headers: { 'Content-Type': 'application/json' } });
+        } catch (e) {
+            return new Response(JSON.stringify({ title: '', description: '' }), { headers: { 'Content-Type': 'application/json' } });
+        }
       }
 
       if (url.pathname === '/api/getLinks') {
