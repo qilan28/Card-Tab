@@ -1,6 +1,6 @@
 # Card-Tab 书签卡片式管理，进入管理模式可以自由移动书签位置，添加和删除书签，支持自定义网站分类，支持切换暗色主题
 
-#### 演示站点：  https://dh.qilan.workers.dev   备用网址：https://dh.2.2.a.a.f.f.0.7.0.0.6.2.ip6.arpa
+#### 演示站点：  https://dh.qilan.workers.dev   备用网址：http://dh.2.2.a.a.f.f.0.7.0.0.6.2.ip6.arpa
 #### 界面：
 ![1745910265848](https://raw.githubusercontent.com/qilan28/Card-Tab/refs/heads/main/img/QQ%E6%88%AA%E5%9B%BE20251201231108.png)
 
