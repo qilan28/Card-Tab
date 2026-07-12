@@ -1,3 +1,10 @@
+// ========== 全局配置（修改这里即可） ==========
+const CONFIG = {
+    BG_URL: 'https://api.tomys.top/api/acgimg',  // 背景图 URL
+    SESSION_HOURS: 5,                              // 登录有效时长（小时）
+};
+// =============================================
+
 const HTML_CONTENT = `
 <!DOCTYPE html>
 <html lang="zh-CN">
@@ -21,7 +28,7 @@ const HTML_CONTENT = `
     body {
         font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
         background-color: #121418; color: #222; transition: all 0.4s ease;
-        background-image: url('https://api.tomys.top/api/acgimg');
+        background-image: url('${CONFIG.BG_URL}');
         background-size: cover; background-position: center top; background-attachment: fixed; background-repeat: no-repeat;
         min-height: 100vh;
     }
@@ -154,6 +161,8 @@ const HTML_CONTENT = `
     .card-url { font-size: 12px; color: #95a5a6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; width: 100%; min-width: 0;}
     
     body.dark-theme .card-title { color: #f1f2f6; } body.dark-theme .card-url { color: #a4b0be; }
+    .card-tips { font-size: 11px; color: #aaa; margin-top: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; line-height: 1.4; min-height: 16px; }
+    body.dark-theme .card-tips { color: #888; }
 
     .private-tag { background-color: #f39c12; color: white; font-size: 10px; font-weight: bold; padding: 3px 6px; border-radius: 4px; position: absolute; top: -8px; right: -8px; z-index: 5; box-shadow: 0 2px 5px rgba(243, 156, 18, 0.3); }
     .card-actions { position: absolute; top: -12px; right: -12px; display: flex; gap: 6px; z-index: 15; }
@@ -312,7 +321,7 @@ const HTML_CONTENT = `
             <button class="round-btn add-btn" onclick="showAddDialog()" title="添加链接">
                 <svg viewBox="0 0 48 48" width="22" height="22"><path d="M16 6H8a2 2 0 0 0-2 2v8M16 42H8a2 2 0 0 1-2-2v-8M32 42h8a2 2 0 0 0 2-2v-8M32 6h8a2 2 0 0 1 2 2v8" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M32 24H16M24 16v16" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
             </button>
-            <button class="round-btn remove-btn" onclick="toggleRemoveMode()" title="编辑链接">
+            <button class="round-btn remove-btn" onclick="toggleRemoveMode()" title="批量操作">
                 <svg viewBox="0 0 48 48" width="22" height="22"><path d="M42 26v14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h14" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M14 26.72V34h7.32L42 13.31 34.7 6 14 26.72Z" stroke="white" stroke-width="4" stroke-linejoin="round" fill="none"/></svg>
             </button>
             <button class="round-btn category-add-btn" onclick="showAddParentCatDialog()" title="添加一级分类">
@@ -327,6 +336,13 @@ const HTML_CONTENT = `
         </div>
 
         <div id="sections-container"></div>
+
+        <div id="batch-bar" style="display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(44,62,80,0.95);backdrop-filter:blur(10px);border-radius:12px;padding:10px 20px;z-index:1000;display:none;gap:10px;align-items:center;box-shadow:0 4px 20px rgba(0,0,0,0.3);">
+            <span id="batch-count" style="color:#fff;font-size:13px;margin-right:8px;">已选 0 项</span>
+            <button onclick="batchMove()" style="background:#43b883;color:#fff;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:13px;">移动到...</button>
+            <button onclick="batchDelete()" style="background:#e74c3c;color:#fff;border:none;border-radius:8px;padding:8px 16px;cursor:pointer;font-size:13px;">删除所选</button>
+            <button onclick="toggleRemoveMode()" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:8px;padding:8px 16px;cursor:pointer;font-size:13px;">退出</button>
+        </div>
         
         <div class="floating-button-group">
             <button id="back-to-top-btn" onclick="scrollToTop()" style="display: none;">
@@ -642,6 +658,14 @@ const HTML_CONTENT = `
             pSection.dataset.parent = pCat;
 
             if (isAdmin) {
+                const pTitleContainer = document.createElement('div');
+                pTitleContainer.className = 'parent-title-container';
+                const pTitle = document.createElement('div');
+                pTitle.className = 'parent-title';
+                pTitle.textContent = pCat;
+                pTitleContainer.appendChild(pTitle);
+                pSection.appendChild(pTitleContainer);
+
                 const catActions = document.createElement('div');
                 catActions.className = 'category-actions';
                 catActions.style.cssText = 'display:flex;gap:6px;padding:4px 0;align-items:center;';
@@ -802,6 +826,25 @@ const HTML_CONTENT = `
         card.appendChild(cardTop);
         card.appendChild(url);
 
+        const tipsEl = document.createElement('div');
+        tipsEl.className = 'card-tips';
+        tipsEl.textContent = link.tips || '';
+        card.appendChild(tipsEl);
+
+        // 自动获取描述：无描述时异步抓取网站 meta
+        if (!link.tips || !link.tips.trim()) {
+            setTimeout(async () => {
+                try {
+                    const resp = await fetch('/api/fetchMeta?url=' + encodeURIComponent(link.url));
+                    const data = await resp.json();
+                    if (data.description && data.description.trim()) {
+                        tipsEl.textContent = data.description;
+                        link.tips = data.description; // 同步到原对象
+                    }
+                } catch (e) { /* ignore */ }
+            }, 200);
+        }
+
         if (link.isPrivate) {
             const pTag = document.createElement('div');
             pTag.className = 'private-tag';
@@ -810,14 +853,45 @@ const HTML_CONTENT = `
         }
 
         const correctedUrl = link.url.startsWith('http') ? link.url : 'http://' + link.url;
-        // 点击卡片始终跳转（批量删除模式除外）
-        if (!removeMode) {
-            card.addEventListener('click', () => window.open(correctedUrl, '_blank'));
+        card.addEventListener('click', (e) => {
+            if (removeMode) {
+                if (e.target.closest('.card-btn') || e.target.closest('.batch-cb')) return;
+                const cb = card.querySelector('.batch-cb');
+                if (cb) cb.click();
+                return;
+            }
+            window.open(correctedUrl, '_blank');
+        });
+
+        // 批量操作复选框（卡片右下角）
+        const batchCb = document.createElement('div');
+        batchCb.className = 'card-btn batch-cb';
+        batchCb.style.cssText = 'display:none;position:absolute;bottom:0;right:0;width:24px;height:24px;border:2px solid #ccc;background:rgba(255,255,255,0.9);align-items:center;justify-content:center;cursor:pointer;transition:all 0.15s;z-index:5;border-radius:4px;';
+        batchCb.dataset.url = link.url;
+        batchCb.dataset.checked = 'false';
+        batchCb.onclick = (e) => {
+            e.stopPropagation();
+            const checked = batchCb.dataset.checked === 'true';
+            batchCb.dataset.checked = String(!checked);
+            if (!checked) {
+                batchCb.style.borderColor = '#43b883';
+                batchCb.style.background = '#43b883';
+                batchCb.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3"><polyline points="4 12 10 18 20 6"/></svg>';
+            } else {
+                batchCb.style.borderColor = '#ccc';
+                batchCb.style.background = 'rgba(255,255,255,0.85)';
+                batchCb.innerHTML = '';
+            }
+            updateBatchCount();
+        };
+        if (removeMode) {
+            batchCb.style.display = 'flex';
         }
+        card.style.position = 'relative';
+        card.appendChild(batchCb);
 
         const actions = document.createElement('div');
         actions.className = 'card-actions';
-
         const editBtn = document.createElement('button');
         editBtn.className = 'card-btn edit-btn';
         editBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="m18.5 2.5 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>';
@@ -1006,7 +1080,9 @@ const HTML_CONTENT = `
         Object.keys(categories).forEach(k => delete categories[k]);
         Object.assign(categories, newCats);
 
-        [...publicLinks, ...privateLinks, links].forEach(arr => { arr.forEach(l => { if(l.category===old) l.category=name; }); });
+        publicLinks.forEach(l => { if(l.category===old) l.category=name; });
+        privateLinks.forEach(l => { if(l.category===old) l.category=name; });
+        links.forEach(l => { if(l.category===old) l.category=name; });
         if(activeCategory === old) activeCategory = name;
         try { await saveLinks(); } catch(e) { await loadLinks(); customAlert('保存失败，请重试'); }
         renderSections();
@@ -1088,8 +1164,93 @@ const HTML_CONTENT = `
 
     function toggleRemoveMode() {
         removeMode = !removeMode;
+        if (removeMode) {
+            document.getElementById('batch-bar').style.display = 'flex';
+            document.querySelectorAll('.batch-cb').forEach(cb => {
+                cb.dataset.checked = 'false';
+                cb.style.borderColor = '#ccc';
+                cb.style.background = 'rgba(255,255,255,0.85)';
+                cb.innerHTML = '';
+            });
+            updateBatchCount();
+        } else {
+            document.getElementById('batch-bar').style.display = 'none';
+        }
         document.querySelectorAll('.edit-btn, .delete-btn').forEach(b => b.style.display = removeMode ? 'flex' : 'none');
+        document.querySelectorAll('.batch-cb').forEach(b => b.style.display = removeMode ? 'flex' : 'none');
         document.querySelectorAll('.card').forEach(c => c.style.cursor = removeMode ? 'default' : 'pointer');
+    }
+
+    function updateBatchCount() {
+        const n = document.querySelectorAll('.batch-cb[data-checked="true"]').length;
+        document.getElementById('batch-count').textContent = '已选 ' + n + ' 项';
+    }
+
+    function getCheckedUrls() {
+        return [...document.querySelectorAll('.batch-cb[data-checked="true"]')].map(cb => cb.dataset.url);
+    }
+
+    async function batchDelete() {
+        if (!await validateToken()) return;
+        const urls = getCheckedUrls();
+        if (urls.length === 0) return customAlert('请先选择要删除的书签');
+        if (!await customConfirm('确定删除选中的 ' + urls.length + ' 个书签？')) return;
+        publicLinks = publicLinks.filter(l => !urls.includes(l.url));
+        privateLinks = privateLinks.filter(l => !urls.includes(l.url));
+        links = isLoggedIn ? [...publicLinks, ...privateLinks] : publicLinks;
+        try { await saveLinks(); } catch(e) { await loadLinks(); customAlert('保存失败，请重试'); }
+        toggleRemoveMode();
+        renderSections();
+    }
+
+    async function batchMove() {
+        if (!await validateToken()) return;
+        const urls = getCheckedUrls();
+        if (urls.length === 0) return customAlert('请先选择要移动的书签');
+        // 弹窗选目标分类
+        const d = document.getElementById('simple-input-dialog');
+        document.getElementById('simple-input-dialog-title').textContent = '选择目标分类';
+        // 构建选择器
+        let selHtml = '<div style="margin-bottom:10px;"><label>一级分类</label><select id="batch-target-cat" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd;">';
+        Object.keys(categories).forEach(c => { selHtml += '<option>' + c + '</option>'; });
+        selHtml += '</select></div><div><label>二级分类</label><select id="batch-target-sub" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ddd;"></select></div>';
+        document.getElementById('simple-input-value').style.display = 'none';
+        const extra = document.createElement('div');
+        extra.id = 'batch-move-extra';
+        extra.innerHTML = selHtml;
+        document.getElementById('simple-input-value').parentNode.insertBefore(extra, document.getElementById('simple-input-value'));
+        
+        function updateSubs() {
+            const p = document.getElementById('batch-target-cat').value;
+            const s = document.getElementById('batch-target-sub');
+            s.innerHTML = '';
+            (categories[p]||[]).forEach(sub => { s.innerHTML += '<option>' + sub + '</option>'; });
+        }
+        document.getElementById('batch-target-cat').onchange = updateSubs;
+        updateSubs();
+        
+        d.style.display = 'flex';
+        document.getElementById('simple-input-confirm').onclick = async () => {
+            const targetCat = document.getElementById('batch-target-cat').value;
+            const targetSub = document.getElementById('batch-target-sub').value;
+            d.style.display = 'none';
+            document.getElementById('simple-input-value').style.display = '';
+            if (extra.parentNode) extra.parentNode.removeChild(extra);
+            // 移动所有选中的链接
+            const allLinks = [...publicLinks, ...privateLinks];
+            urls.forEach(url => {
+                const link = allLinks.find(l => l.url === url);
+                if (link) { link.category = targetCat; link.subCategory = targetSub; }
+            });
+            try { await saveLinks(); } catch(e) { await loadLinks(); customAlert('保存失败，请重试'); }
+            toggleRemoveMode();
+            renderSections();
+        };
+        document.getElementById('simple-input-cancel').onclick = () => {
+            d.style.display = 'none';
+            document.getElementById('simple-input-value').style.display = '';
+            if (extra.parentNode) extra.parentNode.removeChild(extra);
+        };
     }
 
     /* ---------------- 对话框控制 ---------------- */
@@ -1326,6 +1487,7 @@ const HTML_CONTENT = `
         } else if (isAdmin) {
             isAdmin = false; removeMode = false; isEditCategoryMode = false;
             document.querySelector('.add-remove-controls').style.display = 'none';
+            document.getElementById('batch-bar').style.display = 'none';
             renderSections();
         }
         updateLoginButton();
@@ -1398,7 +1560,7 @@ const HTML_CONTENT = `
     function hideLoginModal() { document.getElementById('login-modal').style.display='none'; }
     document.getElementById('fetch-meta-btn').onclick = fetchSiteMeta;
     document.getElementById('login-btn').onclick = async () => {
-        if(isLoggedIn) { if(await customConfirm('确定退出登录？')) { isLoggedIn=false; isAdmin=false; localStorage.removeItem('authToken'); links=publicLinks; renderSections(); updateLoginButton(); document.querySelector('.add-remove-controls').style.display='none'; } }
+        if(isLoggedIn) { if(await customConfirm('确定退出登录？')) { isLoggedIn=false; isAdmin=false; removeMode=false; localStorage.removeItem('authToken'); links=publicLinks; renderSections(); updateLoginButton(); document.querySelector('.add-remove-controls').style.display='none'; document.getElementById('batch-bar').style.display='none'; } }
         else { document.getElementById('login-modal').style.display='flex'; document.getElementById('login-password').value=''; setTimeout(()=>document.getElementById('login-password').focus(),50); }
     };
     function updateLoginButton() {
@@ -1441,7 +1603,7 @@ async function validateServerToken(authToken, env) {
     if (!authToken) return { isValid: false, status: 401, response: { error: 'Unauthorized' } };
     try {
         const [timestamp, hash] = authToken.split('.');
-        if (Date.now() - parseInt(timestamp) > 300 * 60 * 1000) return { isValid: false, status: 401 };
+        if (Date.now() - parseInt(timestamp) > CONFIG.SESSION_HOURS * 60 * 60 * 1000) return { isValid: false, status: 401 };
         const data = new TextEncoder().encode(timestamp + "_" + env.ADMIN_PASSWORD);
         const hashBuffer = await crypto.subtle.digest('SHA-256', data);
         const expectedHash = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
@@ -1473,9 +1635,11 @@ export default {
             const html = await resp.text();
             const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
             const descMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i) || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i);
+            // 解码 HTML 实体
+            const decode = (s) => s.replace(/&#(\d+);/g, (_, d) => String.fromCharCode(parseInt(d))).replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
             return new Response(JSON.stringify({
-                title: titleMatch ? titleMatch[1].trim() : '',
-                description: descMatch ? descMatch[1].trim() : ''
+                title: titleMatch ? decode(titleMatch[1].trim()) : '',
+                description: descMatch ? decode(descMatch[1].trim()) : ''
             }), { headers: { 'Content-Type': 'application/json' } });
         } catch (e) {
             return new Response(JSON.stringify({ title: '', description: '' }), { headers: { 'Content-Type': 'application/json' } });
